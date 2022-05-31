@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Calculate your complicated expenses!</title>
+    <style>
+      *{
+        background-color: transparent;
+        color: blanchedalmond;
+        font-size: large;
+        border-color: rgb(0, 0, 85);
+        text-align: center;
+        margin-left: auto;
+        margin-right: auto;
+      }
+      textarea {
+        resize: none;
+        border-color: transparent;
+        width: 90ch;
+      }
+      body{
+        background-image:radial-gradient(rgb(18, 13, 44),black,rgb(18, 13, 44));
+      }
+      .content{
+        margin: auto;
+        padding: 6%;
+      }
+      input[id=amount]{
+        -moz-appearance: textfield;
+        width: 7ch;
+      }
+      input[id=buyer]{
+        width: 15ch;
+      }
+      input[id=owers]{
+        width: 90ch;
+      }
+      button{
+        height: calc(15%);
+      }
+    </style>
+  </head>
+  <body>
+    <noscript>This page contains webassembly and javascript content, please enable javascript in your browser.</noscript>
+    <label for="buyer">Who bought:</label><br>
+    <input type="text" id="buyer" name="buyer" placeholder="Bob"><br>
+
+    <label for="amount">For how much:</label><br>
+    <input type="number" id="amount" name="amount" placeholder=100.00><br>
+
+    <label for="owers">Who owes for this:</label><br>
+    <input type="text" id="owers" name="owers" placeholder="Alice, Charlie"><br><br>
+
+    <button id="add_expense">Add Expense</button><br>
+    <textarea id="expenses_list" rows="10" readonly ></textarea><br>
+    <button id="calculate">Calculate Expenses</button>
+    <table id="report">
+
+    </table>
+    <script src="./bootstrap.js"></script>
+  </body>
+</html>
