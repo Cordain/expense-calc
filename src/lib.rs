@@ -1,6 +1,6 @@
 mod utils;
 
-use std::{fmt::format, collections::{HashSet, HashMap}, hash::Hash};
+use std::{collections::{HashSet, HashMap}, rc::Rc};
 
 use wasm_bindgen::prelude::*;
 
@@ -10,19 +10,20 @@ use wasm_bindgen::prelude::*;
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 
+#[derive(Debug)]
 pub struct Expense {
-    buyer: String,
+    buyer: Rc<String>,
     amount: f32,
-    owers: Vec<String>
+    owers: Vec<Rc<String>>
 }
 
 impl Expense{
-    pub fn new(buyer: String, amount: f32) -> Expense{
+    pub fn new(buyer: Rc<String>, amount: f32) -> Expense{
         Expense { buyer: (buyer), amount: (amount), owers: (Vec::new()) }
     }
 
-    pub fn add_ower(&mut self, ower: String) -> bool{
-        match self.buyer.contains(&ower){
+    pub fn add_ower(&mut self, ower: Rc<String>) -> bool{
+        match self.buyer == ower{
             true => false,
             false =>{
                 self.owers.push(ower);
@@ -32,26 +33,46 @@ impl Expense{
     }
 
     pub fn print_me(&self) -> String{
-        //todo!("Format message with last name to be ' and ' separated."); 
+        let owers_str = 
+            match self.owers.len(){
+                1 => String::from(match self.owers.get(0){
+                    Some(ower) => ower,
+                    None => ""
+                }), 
+                els => {
+                    let mut owers_str = String::from(match self.owers.get(0){
+                        Some(ower) => ower,
+                        None => ""
+                    });
+                    match self.owers.get(1..els-2){
+                        Some(inner_owers) => for ower in inner_owers.into_iter(){
+                            owers_str.push_str(", ");
+                            owers_str.push_str(ower);
+                        }
+                        None => {}
+                    }
+                    owers_str.push_str(" and ");
+                    owers_str.push_str(match self.owers.get(els-1){
+                        Some(ower) => ower,
+                        None => ""
+                    });
+                    owers_str
+                }
+            };
+        alert(&owers_str);
         format!("{} has to receive {:.2} from {}",
             self.buyer,
             self.amount,
-            self.owers.join(", ")
+            owers_str
         )
     }
 
-    pub fn get_names(&self) -> Vec<String>{
-        let mut output = self.owers.clone();
-        output.push(self.buyer.clone());
-        output
-    }
-
-    pub fn get_buyer(&self) -> String{
+    pub fn get_buyer(&self) -> Rc<String>{
         self.buyer.clone()
     }
 
-    pub fn calculate(&self) -> HashMap<String,f32>{
-        let mut report: HashMap<String,f32> = HashMap::new();
+    pub fn calculate(&self) -> HashMap<Rc<String>,f32>{
+        let mut report: HashMap<Rc<String>,f32> = HashMap::new();
         for ower in self.owers.iter(){
             report.insert(ower.to_owned(), self.amount/self.owers.len() as f32);
         }
@@ -60,94 +81,127 @@ impl Expense{
 }
 
 #[wasm_bindgen]
-struct Calculator{
+#[allow(dead_code)]
+pub struct Calculator{
+    people: HashSet<Rc<String>>,
     expenses: Vec<Expense>    
 }
 
 #[wasm_bindgen]
+#[allow(dead_code)]
 impl Calculator{
     pub fn new() -> Calculator{
-        Calculator { expenses: (Vec::new()) }
+        Calculator { expenses: (Vec::new()), people: (HashSet::new()) }
     }
 
     // Add expense and return its reference as index
     pub fn add_expense(&mut self, buyer: String, amount: f32) -> usize{
-        self.expenses.push(Expense::new(buyer,amount));
+        let buyer: Rc<String> = Rc::new(buyer);
+        self.people.insert(buyer.clone());
+        self.expenses.push(Expense::new(buyer.clone(),amount));
         self.expenses.len() -1
     }
 
     pub fn add_ower_to_expense(&mut self, ower: String, expense_idx: usize) -> bool{
         match self.expenses.get_mut(expense_idx){
             Some(expense) => {
-                expense.add_ower(ower)
+                let ower: Rc<String> = Rc::new(ower);
+                self.people.insert(ower.clone());
+                expense.add_ower(ower.clone())
             }
             None => false
         }
     }
 
+    pub fn revert_expense(&mut self){
+        self.expenses.pop();
+    }
+
     pub fn print_expenses(&self) -> String{
         let mut printer = String::from("Current Expenses:");
         for expense in self.expenses.iter(){
+            let expense_prt = expense.print_me();
+            alert(&expense_prt);
             printer.push('\n');
-            printer.push_str(&expense.print_me());
+            printer.push_str(&expense_prt);
         };
         printer
     }
 
     pub fn calculate(&self) -> Option<String>{
-        //aquire names
-        let names: Vec<String> = {
-            let mut names: HashSet<String> = HashSet::new();
-            for expense in self.expenses.iter(){
-                let names_from_expense = expense.get_names();
-                for name in names_from_expense.iter(){
-                    names.insert(name.clone());
-                }
-            }
-            names.into_iter().collect()
-        };
         //init cost matrix
-        let mut cost_matrix: HashMap<&String, HashMap<&String,f32>>;
+        let mut cost_matrix: HashMap<Rc<String>, HashMap<Rc<String>,f32>>;
         cost_matrix = HashMap::new();
-        for name in names.iter(){
-            let mut cost_row: HashMap<&String,f32> = HashMap::new();
-            for name in names.iter(){
-                cost_row.insert(name, 0f32);
+        for name in self.people.iter(){
+            let mut cost_row: HashMap<Rc<String>,f32> = HashMap::new();
+            for name in self.people.iter(){
+                cost_row.insert(name.clone(), 0f32);
             }
 
-            cost_matrix.insert(name, cost_row);
+            cost_matrix.insert(name.clone(), cost_row);
         }
         //calculate cost matrix
         for expense in self.expenses.iter(){
             let expense_report = expense.calculate();
-            let buyer_ref = match names.binary_search(&expense.get_buyer()){
-                Ok(idx) => {
-                    names.get(idx)
+            let buyer = expense.get_buyer();
+            let buyer_ref = match self.people.get(&buyer){
+                Some(idx) => {
+                    Some(idx)
                 }
-                Err(_) => None
+                None => {
+                    alert("Could not find buyer.");
+                    None
+                }
             }?;
             for (ower, amount) in expense_report{
                 //get reference from names vec
-                let ower_ref = match names.binary_search(&ower){
-                    Ok(idx) => {
-                        names.get(idx)
+                let ower_ref = match self.people.get(&ower){
+                    Some(idx) => {
+                        Some(idx)
                     }
-                    Err(_) => None
+                    None => {
+                        alert("Could not find ower.");
+                        None
+                    }
                 }?;
                 
-                *cost_matrix.get_mut(buyer_ref)?.get_mut(ower_ref)? += amount;
+                match cost_matrix.get_mut(buyer_ref){
+                    Some(buyer) => {
+                        match buyer.get_mut(ower_ref){
+                            Some(ower) => {
+                                *ower += amount;
+                            }
+                            None => {
+                                alert("Problem getting owe in cost matrix.");
+                            }
+                        }
+                    }
+                    None => {
+                        alert("Problem getting buyer in cost matrix.");
+                    }
+                };
             }
         }
         //stringify cost matrix to csv
-        let mut csv: String = format!("Buyer\\Ower;{}",names.join(";"));
+        let mut csv: String = format!("Buyer\\Ower;");
+        for person in self.people.iter(){
+            csv.push_str(person);
+            csv.push(';');
+        }
         
         for (buyer,owes) in cost_matrix.iter(){
             csv.push('\n');
             let mut amounts: Vec<String> = Vec::new();
-            for name in names.iter(){
-                amounts.push(owes.get(name)?.to_string());
-            }
-            csv.push_str(buyer.clone());
+            for name in self.people.iter(){
+                amounts.push(match owes.get(name){
+                    Some(owe) => owe.to_string(),
+                    None => {
+                        alert("Error: no owe in cost matrix!");
+                        String::from("0")
+                    }
+                });
+            };
+            csv.push_str(buyer);
             csv.push(';');
             csv.push_str(&amounts.join(";"));
         }

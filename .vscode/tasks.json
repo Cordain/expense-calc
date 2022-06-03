@@ -17,6 +17,7 @@
             "label": "Build for web",
             "type": "shell",
             "command": "wasm-pack",
+            "group": "build",
             "args": [
                 "build",
                 "--target",

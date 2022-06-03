@@ -5,34 +5,37 @@ let wasm = await init();
 const expenses_list = document.getElementById("expenses_list");
 const add_expense = document.getElementById("add_expense");
 const calculate = document.getElementById("calculate");
+const clear_data = document.getElementById("clear_data");
 const buyer = document.getElementById("buyer");
 const amount = document.getElementById("amount");
 const owers = document.getElementById("owers");
+const table = document.getElementById("report");
 
-const ext_calculator = Calculator.new();
+let ext_calculator;
 init_site()
 
 add_expense.addEventListener("click", event => {
-    const buyer_name = buyer.value;
-    const amount_val = amount.value;
-    const owers_names = owers.value;
-    if(buyer_name == "" || amount_val == "" || owers_names == ""){
-        alert("Please fill the form");
-    }
-    else{
-        const idx = ext_calculator.add_expense(buyer_name,amount_val);
+    const buyer_name = buyer.value.match(/[\p{L}a-zA-Z]+(?: [\p{L}a-zA-Z]+)?/u);
+    const amount_val = amount.value.match(/\d*\.?\d*/);
+    const owers_names = owers.value.match(/[\p{L}a-zA-Z]+(?: [\p{L}a-zA-Z]+)?/gu);
+    const owers_count = (owers.value.match(/,/g) || []).length;
+    if((buyer_name !== null && amount_val !== null && owers_names !== null) && (buyer_name[0] === buyer.value) && (amount_val[0] === amount.value) && (owers_names.length-1 === owers_count)){
+        const idx = ext_calculator.add_expense(buyer_name[0],amount_val[0]);
 
-        owers.value.split(new RegExp(", ?")).forEach(name => {
+        owers_names.forEach(name => {
             if (false == ext_calculator.add_ower_to_expense(name,idx)) {
                 alert("ERROR adding "+name);
+                ext_calculator.revert_expense();
             }
         });
         expenses_list.textContent = ext_calculator.print_expenses();
     }
+    else{
+        alert("Please fill the form");
+    }
 })
 
 calculate.addEventListener("click", event => {
-    const table = document.getElementById("report");
     const report = document.createElement("tbody");
     table.innerHTML = "";
 
@@ -64,9 +67,16 @@ calculate.addEventListener("click", event => {
     }
 })
 
+clear_data.addEventListener("click", event =>{
+    init_site();
+    alert("Site has been cleared!");
+})
+
 function init_site(){
+    ext_calculator = Calculator.new();
     expenses_list.textContent = ext_calculator.print_expenses();
     buyer.value = "";
     amount.value = "";
     owers.value = "";
+    table.innerHTML = "";
 }
