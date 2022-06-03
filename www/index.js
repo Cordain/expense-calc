@@ -7,6 +7,7 @@ const add_expense = document.getElementById("add_expense");
 const calculate = document.getElementById("calculate");
 const clear_data = document.getElementById("clear_data");
 const buyer = document.getElementById("buyer");
+const is_included = document.getElementById("included");
 const amount = document.getElementById("amount");
 const owers = document.getElementById("owers");
 const table = document.getElementById("report");
@@ -20,7 +21,7 @@ add_expense.addEventListener("click", event => {
     const owers_names = owers.value.match(/[\p{L}a-zA-Z]+(?: [\p{L}a-zA-Z]+)?/gu);
     const owers_count = (owers.value.match(/,/g) || []).length;
     if((buyer_name !== null && amount_val !== null && owers_names !== null) && (buyer_name[0] === buyer.value) && (amount_val[0] === amount.value) && (owers_names.length-1 === owers_count)){
-        const idx = ext_calculator.add_expense(buyer_name[0],amount_val[0]);
+        const idx = ext_calculator.add_expense(buyer_name[0],amount_val[0], is_included.checked);
 
         owers_names.forEach(name => {
             if (false == ext_calculator.add_ower_to_expense(name,idx)) {
@@ -76,6 +77,7 @@ function init_site(){
     ext_calculator = Calculator.new();
     expenses_list.textContent = ext_calculator.print_expenses();
     buyer.value = "";
+    is_included.checked = true;
     amount.value = "";
     owers.value = "";
     table.innerHTML = "";

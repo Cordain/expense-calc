@@ -14,12 +14,13 @@ static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
 pub struct Expense {
     buyer: Rc<String>,
     amount: f32,
+    buyer_included: bool,
     owers: Vec<Rc<String>>
 }
 
 impl Expense{
-    pub fn new(buyer: Rc<String>, amount: f32) -> Expense{
-        Expense { buyer: (buyer), amount: (amount), owers: (Vec::new()) }
+    pub fn new(buyer: Rc<String>, amount: f32, buyer_included: bool) -> Expense{
+        Expense { buyer: (buyer), amount: (amount), buyer_included: (buyer_included), owers: (Vec::new()) }
     }
 
     pub fn add_ower(&mut self, ower: Rc<String>) -> bool{
@@ -44,7 +45,7 @@ impl Expense{
                         Some(ower) => ower,
                         None => ""
                     });
-                    match self.owers.get(1..els-2){
+                    match self.owers.get(1..els-1){
                         Some(inner_owers) => for ower in inner_owers.into_iter(){
                             owers_str.push_str(", ");
                             owers_str.push_str(ower);
@@ -59,7 +60,6 @@ impl Expense{
                     owers_str
                 }
             };
-        alert(&owers_str);
         format!("{} has to receive {:.2} from {}",
             self.buyer,
             self.amount,
@@ -73,8 +73,12 @@ impl Expense{
 
     pub fn calculate(&self) -> HashMap<Rc<String>,f32>{
         let mut report: HashMap<Rc<String>,f32> = HashMap::new();
+        let divided_amount = match self.buyer_included{
+            false => self.amount/self.owers.len() as f32,
+            true => self.amount/(self.owers.len()+1) as f32
+        };
         for ower in self.owers.iter(){
-            report.insert(ower.to_owned(), self.amount/self.owers.len() as f32);
+            report.insert(ower.to_owned(), divided_amount);
         }
         report
     }
@@ -95,10 +99,10 @@ impl Calculator{
     }
 
     // Add expense and return its reference as index
-    pub fn add_expense(&mut self, buyer: String, amount: f32) -> usize{
+    pub fn add_expense(&mut self, buyer: String, amount: f32, buyer_included: bool) -> usize{
         let buyer: Rc<String> = Rc::new(buyer);
         self.people.insert(buyer.clone());
-        self.expenses.push(Expense::new(buyer.clone(),amount));
+        self.expenses.push(Expense::new(buyer.clone(), amount,buyer_included));
         self.expenses.len() -1
     }
 
@@ -121,7 +125,6 @@ impl Calculator{
         let mut printer = String::from("Current Expenses:");
         for expense in self.expenses.iter(){
             let expense_prt = expense.print_me();
-            alert(&expense_prt);
             printer.push('\n');
             printer.push_str(&expense_prt);
         };
@@ -194,10 +197,10 @@ impl Calculator{
             let mut amounts: Vec<String> = Vec::new();
             for name in self.people.iter(){
                 amounts.push(match owes.get(name){
-                    Some(owe) => owe.to_string(),
+                    Some(owe) => format!("{:.2}",owe),
                     None => {
                         alert("Error: no owe in cost matrix!");
-                        String::from("0")
+                        String::from("0.00")
                     }
                 });
             };
