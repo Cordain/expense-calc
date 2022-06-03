@@ -21,14 +21,10 @@ add_expense.addEventListener("click", event => {
     const owers_names = owers.value.match(/[\p{L}a-zA-Z]+(?: [\p{L}a-zA-Z]+)?/gu);
     const owers_count = (owers.value.match(/,/g) || []).length;
     if((buyer_name !== null && amount_val !== null && owers_names !== null) && (buyer_name[0] === buyer.value) && (amount_val[0] === amount.value) && (owers_names.length-1 === owers_count)){
-        const idx = ext_calculator.add_expense(buyer_name[0],amount_val[0], is_included.checked);
+        if(false == ext_calculator.add_expense(buyer_name[0],amount_val[0], is_included.checked, owers_names)){
+            alert("ERROR adding expense, check name duplicates!");
+        }
 
-        owers_names.forEach(name => {
-            if (false == ext_calculator.add_ower_to_expense(name,idx)) {
-                alert("ERROR adding "+name);
-                ext_calculator.revert_expense();
-            }
-        });
         expenses_list.textContent = ext_calculator.print_expenses();
     }
     else{

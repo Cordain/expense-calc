@@ -85,25 +85,41 @@ impl Expense{
 }
 
 #[wasm_bindgen]
-#[allow(dead_code)]
 pub struct Calculator{
     people: HashSet<Rc<String>>,
     expenses: Vec<Expense>    
 }
 
 #[wasm_bindgen]
-#[allow(dead_code)]
 impl Calculator{
     pub fn new() -> Calculator{
         Calculator { expenses: (Vec::new()), people: (HashSet::new()) }
     }
 
     // Add expense and return its reference as index
-    pub fn add_expense(&mut self, buyer: String, amount: f32, buyer_included: bool) -> usize{
+    pub fn add_expense(&mut self, buyer: String, amount: f32, buyer_included: bool, owers: Box<[JsValue]>) -> bool{
         let buyer: Rc<String> = Rc::new(buyer);
         self.people.insert(buyer.clone());
-        self.expenses.push(Expense::new(buyer.clone(), amount,buyer_included));
-        self.expenses.len() -1
+
+        let mut expense = Expense::new(buyer.clone(), amount,buyer_included);
+
+        for ower in owers.to_vec().iter(){
+            match ower.as_string(){
+                Some(o) => {
+                    let ower = Rc::new(o);
+                    match expense.add_ower(ower.clone()){
+                        true => {
+                            self.people.insert(ower.clone());
+                        }
+                        false => {return false;}
+                    }
+                }
+                None => { return false;}
+            }
+        }
+
+        self.expenses.push(expense);
+        true
     }
 
     pub fn add_ower_to_expense(&mut self, ower: String, expense_idx: usize) -> bool{
@@ -115,10 +131,6 @@ impl Calculator{
             }
             None => false
         }
-    }
-
-    pub fn revert_expense(&mut self){
-        self.expenses.pop();
     }
 
     pub fn print_expenses(&self) -> String{
