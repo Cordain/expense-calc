@@ -26,6 +26,16 @@
                 "./www/pkg"
             ],
             "problemMatcher": []
+        },
+        {
+            "label": "Clean",
+            "type": "shell",
+            "command": "sh",
+            "args": [
+                "-c",
+                "\"rm -r ./target && rm -r ./www/pkg\""
+            ],
+            "problemMatcher": []
         }
     ]
 }
