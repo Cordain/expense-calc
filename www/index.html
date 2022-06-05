@@ -53,13 +53,20 @@
     <input type="checkbox" id="included" checked><br><br>
 
     <label for="amount">For how much:</label><br>
-    <input type="number" id="amount" name="amount" placeholder=100.00><br>
+    <input type="number" id="amount" name="amount" placeholder=100.00>
+    <select id="expense_currency">
+    </select>
+    <br>
 
     <label for="owers">Who owes for this:</label><br>
     <input type="text" id="owers" name="owers" placeholder="Alice, Charlie"><br><br>
 
     <button id="add_expense">Add Expense</button><br>
     <textarea id="expenses_list" rows="10" readonly ></textarea><br>
+    <label for="target_currency">For currency:</label><br>
+    <select id="target_currency">
+    </select>
+    <br>
     <button id="calculate">Calculate Expenses</button><br>
     <button id="clear_data">Clear Data</button>
     <table id="report">

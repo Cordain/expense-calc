@@ -11,17 +11,28 @@ const is_included = document.getElementById("included");
 const amount = document.getElementById("amount");
 const owers = document.getElementById("owers");
 const table = document.getElementById("report");
+const expense_currency = document.getElementById("expense_currency");
+const target_currency = document.getElementById("target_currency");
 
-let ext_calculator;
-init_site()
+var ext_calculator;
+init_site();
 
 add_expense.addEventListener("click", event => {
     const buyer_name = buyer.value.match(/[\p{L}a-zA-Z]+(?: [\p{L}a-zA-Z]+)?/u);
     const amount_val = amount.value.match(/\d*\.?\d*/);
     const owers_names = owers.value.match(/[\p{L}a-zA-Z]+(?: [\p{L}a-zA-Z]+)?/gu);
     const owers_count = (owers.value.match(/,/g) || []).length;
-    if((buyer_name !== null && amount_val !== null && owers_names !== null) && (buyer_name[0] === buyer.value) && (amount_val[0] === amount.value) && (owers_names.length-1 === owers_count)){
-        if(false == ext_calculator.add_expense(buyer_name[0],amount_val[0], is_included.checked, owers_names)){
+    const currency = ext_calculator.confirm_currency(expense_currency.value);
+    if(
+        buyer_name !== null && 
+        amount_val !== null && 
+        owers_names !== null && 
+        buyer_name[0] === buyer.value && 
+        amount_val[0] === amount.value && 
+        owers_names.length-1 === owers_count &&
+        currency !== null
+    ){
+        if(false == ext_calculator.add_expense(buyer_name[0], amount_val[0], currency, is_included.checked, owers_names)){
             alert("ERROR adding expense, check name duplicates!");
         }
 
@@ -32,12 +43,15 @@ add_expense.addEventListener("click", event => {
     }
 })
 
-calculate.addEventListener("click", event => {
+calculate.addEventListener("click", calc_on_click)
+
+async function calc_on_click(event){
     const report = document.createElement("tbody");
+    const currency = ext_calculator.confirm_currency(target_currency.value);
     table.innerHTML = "";
 
-    const calc_report = ext_calculator.calculate();
-
+    const calc_report = await ext_calculator.calculate(currency);
+    
     
     if(calc_report !== undefined){
         const first_line_end = calc_report.indexOf('\n');
@@ -62,7 +76,7 @@ calculate.addEventListener("click", event => {
         })
         table.appendChild(report);
     }
-})
+}
 
 clear_data.addEventListener("click", event =>{
     init_site();
@@ -71,10 +85,27 @@ clear_data.addEventListener("click", event =>{
 
 function init_site(){
     ext_calculator = Calculator.new();
+    const currencies = JSON.parse(ext_calculator.get_currencies());
     expenses_list.textContent = ext_calculator.print_expenses();
     buyer.value = "";
     is_included.checked = true;
     amount.value = "";
     owers.value = "";
     table.innerHTML = "";
+    expense_currency.innerHTML = "";
+    target_currency.innerHTML = "";
+
+    for (let currency in currencies){
+        var expense_curr = document.createElement('option');
+        var target_curr = document.createElement('option');
+
+        expense_curr.value = currency;
+        expense_curr.innerHTML = currencies[currency];
+        target_curr.value = currency;
+        target_curr.innerHTML = currencies[currency];
+
+        expense_currency.appendChild(expense_curr);
+        target_currency.appendChild(target_curr);
+    }
+    return ext_calculator;
 }
